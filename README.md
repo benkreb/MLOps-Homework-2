@@ -1,36 +1,44 @@
-# MLOps Homework - CI/CD Pipeline Projesi
+# MLOps Homework - CI/CD Pipeline Project
 
-Bu proje, MLOps dersi için hazırlanmış bir CI/CD pipeline örneğidir.
+This project is a CI/CD pipeline example prepared for the MLOps course.
 
-## Proje Yapısı
+## Project Structure
 
 ```
 mlops_homework/
-├── app.py                    # Ana Flask uygulaması
-├── feature_engineering.py    # Özellik mühendisliği fonksiyonları
-├── requirements.txt          # Python bağımlılıkları
-├── Dockerfile                # Docker konteyner yapılandırması
+├── app.py                    # Main Flask application
+├── feature_engineering.py    # Feature engineering functions
+├── requirements.txt          # Python dependencies
+├── Dockerfile                # Docker container configuration
 ├── tests/
-│   ├── test_logic.py        # Unit testler (hızlı, dış bağımlılık yok)
-│   └── test_smoke.py        # Smoke testler (end-to-end, Docker gerekli)
+│   ├── test_logic.py        # Unit tests (fast, no external dependencies)
+│   ├── test_component.py    # Component/Integration tests
+│   └── test_smoke.py        # Smoke tests (end-to-end, requires Docker)
 └── .github/workflows/
     └── main.yml             # GitHub Actions CI/CD pipeline
 ```
 
-## Pipeline Aşamaları
+## Pipeline Stages
 
-1. **Build**: Kod checkout ve Python kurulumu
-2. **Unit Test**: Feature engineering fonksiyonlarının testi (hızlı)
-3. **Lint**: Kod kalitesi kontrolü (pylint)
-4. **Package**: Docker image oluşturma
-5. **Smoke Test**: Uygulamanın çalışır durumda olduğunu doğrulama (end-to-end)
+1. **Build**: Code checkout and Python setup
+2. **Lint**: Code quality check (pylint)
+3. **Unit Test**: Feature engineering function tests (fast, isolated)
+4. **Component/Integration Test**: Tests interaction between model serving logic and feature engineering
+5. **Package**: Docker image build
+6. **Smoke Test**: Verifies the application is up and running (end-to-end)
 
-## Yerel Test
+## Local Testing
 
-### Unit Testleri Çalıştırma
+### Run Unit Tests
 
 ```bash
 python -m unittest tests/test_logic.py -v
+```
+
+### Run Component/Integration Tests
+
+```bash
+python -m unittest tests/test_component.py -v
 ```
 
 ### Linting
@@ -40,13 +48,13 @@ pip install pylint
 pylint feature_engineering.py app.py
 ```
 
-### Docker ile Test
+### Docker Testing
 
 ```bash
-# Docker image oluştur
+# Build Docker image
 docker build -t my-mlops-app .
 
-# Konteyneri çalıştır
+# Run container
 docker run -d -p 5000:5000 --name test_container my-mlops-app
 
 # Health check
@@ -55,17 +63,17 @@ curl http://localhost:5000/health
 # Smoke test
 python -m unittest tests/test_smoke.py -v
 
-# Konteyneri durdur
+# Stop container
 docker stop test_container
 docker rm test_container
 ```
 
 ## GitHub Actions
 
-Pipeline otomatik olarak her `push` işleminde çalışır. Pipeline'ın başarısız olması durumunda (örneğin linting hatası veya test hatası), build durur ve "stop the line" prensibi uygulanır.
+The pipeline runs automatically on every `push` operation. If the pipeline fails (e.g., linting error or test failure), the build stops and the "stop the line" principle is applied.
 
-## Test Açıklamaları
+## Test Explanations
 
-- **Unit Testler**: Dış bağımlılık olmadan sadece fonksiyon mantığını test ettiği için hızlıdır.
-- **Smoke Testler**: Docker konteyneri ayağa kaldırıp gerçek bir HTTP isteği attığı ve sistemin çalışır olduğunu doğruladığı için uçtan uca (end-to-end) bir testtir.
-
+- **Unit Tests**: Fast because they test only function logic without external dependencies (no database, network calls).
+- **Component/Integration Tests**: Test the interaction between different components (e.g., model serving logic with feature engineering) to ensure proper integration.
+- **Smoke Tests**: End-to-end tests because they spin up a Docker container, send a real HTTP request, and verify that the system is working correctly.
