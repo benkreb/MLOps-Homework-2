@@ -1,0 +1,63 @@
+name: MLOps CI/CD Pipeline
+
+on: [push]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Kodu Çek (Checkout)
+        uses: actions/checkout@v3
+
+      - name: Python Kurulumu
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+
+      - name: Bağımlılıkları Yükle
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          # Pylint ve Requests kütüphanelerini garantiye alalım
+          pip install pylint requests
+
+      - name: Linting (Kod Kalitesi - Part 1 Task 3)
+        run: |
+          # --disable=all --enable=F,E parametreleri şu işe yarar:
+          # Gereksiz uyarıları (boşluk, yorum satırı eksik vb.) yoksay.
+          # SADECE gerçek hataları (Syntax Error, Tanımsız Değişken) yakala.
+          # Bu sayede Evidence A (Başarı) için stil hatasına takılmazsın.
+          # Ama Evidence B (Sabotaj) için kod bozduğunda hata verir.
+          pylint --disable=all --enable=F,E feature_engineering.py app.py
+
+      - name: Unit Testler (Unit Testing - Part 1 Task 2)
+        run: |
+          python -m unittest tests/test_logic.py -v
+
+      - name: Component/Integration Testler (Part 2 Task 1)
+        run: |
+          python -m unittest tests/test_component.py -v
+
+      - name: Paketi Oluştur (Docker Build - Part 2 Task 1)
+        run: |
+          docker build -t my-mlops-app .
+
+      - name: Uygulamayı Başlat (Staging Deployment)
+        run: |
+          docker run -d -p 5000:5000 --name test_container my-mlops-app
+          # GitHub sunucuları bazen yavaştır, 10sn yetmeyebilir, 30sn bekletiyoruz.
+          sleep 30 
+
+      - name: Smoke Test (Deployment Verification - Part 2 Task 2)
+        run: |
+          # Önce basit CURL isteği
+          curl --fail http://localhost:5000/health || exit 1
+          
+          # Sonra Python tabanlı detaylı Smoke Test
+          python -m unittest tests/test_smoke.py -v
+
+      - name: Konteyneri Temizle
+        if: always()
+        run: |
+          docker stop test_container || true
+          docker rm test_container || true
